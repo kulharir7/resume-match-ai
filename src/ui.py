@@ -25,10 +25,11 @@ def check_auth():
             <div style="color:#6e7681;font-size:0.9em;margin-bottom:30px;">ATS Resume Optimizer</div>
         </div>""", unsafe_allow_html=True)
 
-        with st.form("login"):
+        with st.form("login_form"):
             user = st.text_input("Username", placeholder="Enter username")
             pwd = st.text_input("Password", type="password", placeholder="Enter password")
-            if st.form_submit_button("🔓 Sign In", use_container_width=True, type="primary"):
+            submitted = st.form_submit_button("🔓 Sign In", use_container_width=True, type="primary")
+            if submitted:
                 if user == os.getenv("APP_USER", "admin") and pwd == os.getenv("APP_PASS", "resume123"):
                     st.session_state.authenticated = True
                     st.session_state.username = user

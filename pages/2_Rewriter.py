@@ -5,12 +5,26 @@ import streamlit as st
 st.set_page_config(page_title="ResumeMatch AI — Rewriter", page_icon="📄", layout="wide")
 
 from src.ui import check_auth, inject_css, render_header, render_sidebar_footer
+from src.billing import get_usage, render_paywall, render_usage_badge
 
 if not check_auth():
     st.stop()
 
 inject_css()
 render_header()
+
+# --- Pro-only gate ---
+username = st.session_state.get("username", "guest")
+usage = get_usage(username)
+if not usage["is_pro"]:
+    st.markdown("""
+    <div style="text-align:center; padding:60px 20px;">
+        <div style="font-size:3em; margin-bottom:12px;">✍️</div>
+        <div style="color:white; font-size:1.5em; font-weight:700;">AI Resume Rewriter</div>
+        <div style="color:#6e7681; margin:8px 0 20px 0;">This is a Pro feature. Upgrade to rewrite your resume with AI.</div>
+    </div>""", unsafe_allow_html=True)
+    render_paywall()
+    st.stop()
 
 from src.parser import extract_sections
 from src.rewriter import rewrite_section, generate_summary

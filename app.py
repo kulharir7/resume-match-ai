@@ -5,6 +5,7 @@ import streamlit as st
 st.set_page_config(page_title="ResumeMatch AI", page_icon="📄", layout="wide")
 
 from src.ui import check_auth, inject_css, render_header, render_sidebar_footer, score_color, score_emoji
+from src.billing import can_analyze, increment_usage, render_usage_badge, render_paywall, get_usage
 
 if not check_auth():
     st.stop()
@@ -16,7 +17,11 @@ from src.parser import extract_resume_text, extract_sections
 from src.analyzer import full_analysis
 
 # --- Sidebar ---
+username = st.session_state.get("username", "guest")
+
 with st.sidebar:
+    render_usage_badge()
+    
     st.markdown("### 📄 Input")
     
     jd_text = st.text_area(
@@ -27,8 +32,12 @@ with st.sidebar:
     
     uploaded = st.file_uploader("Upload Resume", type=["pdf", "docx", "txt"])
     
+    can_run = can_analyze(username)
     analyze_btn = st.button("🔍 Analyze Match", type="primary", use_container_width=True,
-                            disabled=not (jd_text and uploaded))
+                            disabled=not (jd_text and uploaded and can_run))
+    
+    if not can_run:
+        st.warning("🔒 Free limit reached — Upgrade to Pro!")
     
     st.divider()
     
@@ -60,8 +69,16 @@ if not st.session_state.get("analysis_result"):
     with c3:
         st.markdown("✍️ **AI Rewrite**\n\nGet optimized version")
 
+# --- Paywall (if limit reached and no results yet) ---
+if not can_analyze(username) and not st.session_state.get("analysis_result"):
+    render_paywall()
+
 # --- Run Analysis ---
 if analyze_btn and jd_text and uploaded:
+    if not can_analyze(username):
+        render_paywall()
+        st.stop()
+    
     resume_bytes = uploaded.read()
     
     with st.status("🔍 Analyzing your resume...", expanded=True) as status:
@@ -85,6 +102,9 @@ if analyze_btn and jd_text and uploaded:
         result["jd_text"] = jd_text
         result["filename"] = uploaded.name
         st.session_state.analysis_result = result
+        
+        # Count usage AFTER successful analysis
+        increment_usage(username)
         
         status.update(label="✅ Analysis Complete!", state="complete")
     

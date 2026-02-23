@@ -6,6 +6,7 @@ import streamlit as st
 st.set_page_config(page_title="ResumeMatch AI — Settings", page_icon="📄", layout="wide")
 
 from src.ui import check_auth, inject_css, render_header, render_sidebar_footer
+from src.billing import render_usage_badge, render_pricing_card, get_usage
 
 if not check_auth():
     st.stop()
@@ -43,5 +44,17 @@ st.divider()
 st.markdown("### 📋 Current Config")
 st.code(f"Provider: {provider}\nBase URL: {os.getenv('LLM_BASE_URL', url)}\nModel: {os.getenv('LLM_MODEL', 'mistral-large-3:675b')}\nAPI Key: {'●●●●' if os.getenv('LLM_API_KEY') else '⚠️ Not set'}")
 
+# --- Billing Section ---
+st.divider()
+username = st.session_state.get("username", "guest")
+usage = get_usage(username)
+st.markdown("### 💳 Billing & Plan")
+if usage["is_pro"]:
+    st.success("⭐ You're on the **Pro Plan** — Unlimited analyses!")
+else:
+    st.markdown(f"📊 **Free Plan** — {usage['remaining']}/{usage['used'] + usage['remaining']} analyses remaining")
+    render_pricing_card()
+
 with st.sidebar:
+    render_usage_badge()
     render_sidebar_footer()
